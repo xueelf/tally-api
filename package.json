@@ -1,0 +1,41 @@
+{
+  "name": "tally-api",
+  "type": "module",
+  "license": "MIT",
+  "author": "Yuki <admin@yuki.sh>",
+  "scripts": {
+    "dev": "bun run docs:build && bun run types && wrangler pages dev ./dist",
+    "types": "wrangler types ./types/worker-configuration.d.ts",
+    "format": "prettier **/*.ts --write",
+    "lint": "eslint **/*.ts",
+    "prepare": "husky",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
+    "husky": "^9.1.7",
+    "prettier": "^3.8.1",
+    "typescript-eslint": "^8.57.1",
+    "vitepress": "^1.6.4",
+    "wrangler": "^4.79.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "bun",
+      "onFail": "error"
+    },
+    "packageManager": {
+      "name": "bun",
+      "onFail": "error"
+    }
+  },
+  "private": true
+}
