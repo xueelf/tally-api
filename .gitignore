@@ -1,0 +1,10 @@
+.DS_Store
+.idea/
+.wrangler/
+dist/
+node_modules/
+
+docs/**/cache/
+docs/**/dist/
+
+worker-configuration.d.ts
