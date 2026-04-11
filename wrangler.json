@@ -1,0 +1,12 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "tally-api",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-03-17",
+  "kv_namespaces": [
+    { "binding": "KV", "id": "f1cce4ae333a44d6a866223a23973809" }
+  ],
+  "vars": {
+    "BUN_VERSION": "latest"
+  }
+}
