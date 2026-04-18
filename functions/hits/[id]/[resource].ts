@@ -67,7 +67,7 @@ type CounterEnv = Env & {
 
 const CORS: Record<string, string> = { 'Access-Control-Allow-Origin': '*' };
 const NO_CACHE: Record<string, string> = {
-  'Cache-Control': 'no-cache, no-store, must-revalidate',
+  'Cache-Control': 'max-age=0, no-cache, no-store, must-revalidate',
   'Access-Control-Allow-Origin': '*',
 };
 

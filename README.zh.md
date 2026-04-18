@@ -1,6 +1,6 @@
 # Tally API
 
-![counter](https://tally.yuki.sh/hits/docs/tally-api.svg?theme=gelbooru)
+![counter](https://tally.yuki.sh/hits/github/tally-api.svg?theme=gelbooru)
 
 基于 Cloudflare Pages Functions 与 KV 的轻量级计数器，适用于 GitHub README、博客及个人页面。
 

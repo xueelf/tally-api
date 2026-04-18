@@ -1,6 +1,6 @@
 # Tally API
 
-![counter](https://tally.yuki.sh/hits/docs/tally-api.svg?theme=gelbooru)
+![counter](https://tally.yuki.sh/hits/github/tally-api.svg?theme=gelbooru)
 
 A lightweight hit counter built on Cloudflare Pages Functions and KV. Use it in GitHub READMEs, blogs, and personal sites.
 
