@@ -14,7 +14,13 @@ GET /hits/:id/:resource[.format]
 | `:resource` | 计数器标识                                   |
 | `.format`   | 可选，`.json` 或 `.svg`，省略时默认返回 JSON |
 
-每次请求都会递增对应的计数器，KV 中存储的键格式为 `hits:<id>:<resource>`。
+计数器在 KV 中会写入以下几个键：
+
+- `hits:<id>:<resource>:visit` — 访问总数
+- `hits:<id>:<resource>:visitor` — 独立 IP 总数
+- `hits:<id>:<resource>:ip:<ip>` — 该 IP 首次访问时的 Unix 时间戳（毫秒）
+
+客户端 IP 从 Cloudflare 注入的 `CF-Connecting-IP` 请求头读取。
 
 如果只想读取当前数值而不增加计数，可以添加 query 参数 `?mode=read`。例如在页面内多次获取统计数据时，使用只读模式可避免计数虚增。
 
@@ -27,11 +33,25 @@ GET /hits/github/tally-api
 GET /hits/github/tally-api.json
 ```
 
-| 响应头                        | 值                                    |
-| ----------------------------- | ------------------------------------- |
-| `Content-Type`                | `application/json`                    |
-| `Cache-Control`               | `no-cache, no-store, must-revalidate` |
-| `Access-Control-Allow-Origin` | `*`                                   |
+响应结构：
+
+```typescript
+type Response = {
+  visit: number;
+  visitor: number;
+};
+```
+
+| 字段      | 说明                         |
+| --------- | ---------------------------- |
+| `visit`   | 计数器建立以来的访问总次数   |
+| `visitor` | 访问过该计数器的独立 IP 总数 |
+
+| 响应头                        | 值                                               |
+| ----------------------------- | ------------------------------------------------ |
+| `Content-Type`                | `application/json`                               |
+| `Cache-Control`               | `max-age=0, no-cache, no-store, must-revalidate` |
+| `Access-Control-Allow-Origin` | `*`                                              |
 
 ## SVG 计数器
 
@@ -44,11 +64,11 @@ GET /hits/github/tally-api.svg?theme=gelbooru
 
 响应为像素风格的计数器 SVG 图片，适合直接嵌入 README 或网页。
 
-| 响应头                        | 值                                    |
-| ----------------------------- | ------------------------------------- |
-| `Content-Type`                | `image/svg+xml`                       |
-| `Cache-Control`               | `no-cache, no-store, must-revalidate` |
-| `Access-Control-Allow-Origin` | `*`                                   |
+| 响应头                        | 值                                               |
+| ----------------------------- | ------------------------------------------------ |
+| `Content-Type`                | `image/svg+xml`                                  |
+| `Cache-Control`               | `max-age=0, no-cache, no-store, must-revalidate` |
+| `Access-Control-Allow-Origin` | `*`                                              |
 
 ### 查询参数
 
@@ -63,10 +83,10 @@ GET /hits/github/tally-api.svg?theme=gelbooru
 
 ## 错误响应
 
-| 状态码 | 响应体                                  | 说明                     |
-| ------ | --------------------------------------- | ------------------------ |
-| `400`  | `{ "error": "Missing id or resource" }` | 缺少必需的路由参数       |
-| `400`  | `{ "error": "Invalid resource" }`       | `resource` 解析失败      |
+| 状态码 | 响应体                                  | 说明                |
+| ------ | --------------------------------------- | ------------------- |
+| `400`  | `{ "error": "Missing id or resource" }` | 缺少必需的路由参数  |
+| `400`  | `{ "error": "Invalid resource" }`       | `resource` 解析失败 |
 
 ## 鸣谢
 

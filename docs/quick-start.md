@@ -43,7 +43,14 @@ You can request JSON directly:
 GET https://tally.yuki.sh/hits/docs/tally-api.json
 ```
 
-The `.json` suffix is optional. If you omit it, the API still returns JSON by default.
+The `.json` suffix is optional. If you omit it, the API still returns JSON by default. The response includes both the total hit count and the number of unique client IPs:
+
+```typescript
+type Response = {
+  visit: number;
+  visitor: number;
+};
+```
 
 That makes Tally API easy to integrate into your own components. The box below is rendered from a live API request:
 

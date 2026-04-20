@@ -14,7 +14,13 @@ GET /hits/:id/:resource[.format]
 | `:resource` | Counter name                                     |
 | `.format`   | Optional. Use `.json` or `.svg`. JSON is default |
 
-Each counter is stored in KV under the key format `hits:<id>:<resource>`.
+Each counter is stored in KV under the following keys:
+
+- `hits:<id>:<resource>:visit` — total hit count
+- `hits:<id>:<resource>:visitor` — unique visitor count
+- `hits:<id>:<resource>:ip:<ip>` — Unix timestamp (ms) of the first visit from that IP
+
+The client IP is read from the `CF-Connecting-IP` header provided by Cloudflare.
 
 If you only want to read the current value without incrementing it, append `?mode=read`. This is useful when the same page fetches the counter more than once.
 
@@ -27,17 +33,25 @@ GET /hits/github/tally-api
 GET /hits/github/tally-api.json
 ```
 
-Example response body:
+Example response structure:
 
-```json
-{ "count": 42 }
+```typescript
+type Response = {
+  visit: number;
+  visitor: number;
+};
 ```
 
-| Header                        | Value                                 |
-| ----------------------------- | ------------------------------------- |
-| `Content-Type`                | `application/json`                    |
-| `Cache-Control`               | `no-cache, no-store, must-revalidate` |
-| `Access-Control-Allow-Origin` | `*`                                   |
+| Field     | Description                                            |
+| --------- | ------------------------------------------------------ |
+| `visit`   | Total number of hits since the counter was created     |
+| `visitor` | Number of distinct client IPs observed for the counter |
+
+| Header                        | Value                                            |
+| ----------------------------- | ------------------------------------------------ |
+| `Content-Type`                | `application/json`                               |
+| `Cache-Control`               | `max-age=0, no-cache, no-store, must-revalidate` |
+| `Access-Control-Allow-Origin` | `*`                                              |
 
 ## SVG Counter
 
@@ -50,18 +64,18 @@ GET /hits/github/tally-api.svg?theme=gelbooru
 
 The response is a pixel-style counter image that can be embedded directly in Markdown or HTML.
 
-| Header                        | Value                                 |
-| ----------------------------- | ------------------------------------- |
-| `Content-Type`                | `image/svg+xml`                       |
-| `Cache-Control`               | `no-cache, no-store, must-revalidate` |
-| `Access-Control-Allow-Origin` | `*`                                   |
+| Header                        | Value                                            |
+| ----------------------------- | ------------------------------------------------ |
+| `Content-Type`                | `image/svg+xml`                                  |
+| `Cache-Control`               | `max-age=0, no-cache, no-store, must-revalidate` |
+| `Access-Control-Allow-Origin` | `*`                                              |
 
 ### Query Parameters
 
-| Parameter | Default      | Description                                    |
-| --------- | ------------ | ---------------------------------------------- |
-| `mode`    | -            | Set to `read` to return the current value only |
-| `theme`   | `moebooru`   | Counter theme. Supports the full Moe Counter set |
+| Parameter | Default    | Description                                      |
+| --------- | ---------- | ------------------------------------------------ |
+| `mode`    | -          | Set to `read` to return the current value only   |
+| `theme`   | `moebooru` | Counter theme. Supports the full Moe Counter set |
 
 ### Themes
 
@@ -71,10 +85,10 @@ If `theme` is invalid, the service falls back to `moebooru` automatically.
 
 ## Error Responses
 
-| Status | Response body                            | Description                     |
-| ------ | ---------------------------------------- | ------------------------------- |
-| `400`  | `{ "error": "Missing id or resource" }` | Missing required route params   |
-| `400`  | `{ "error": "Invalid resource" }`       | Resource parsing failed         |
+| Status | Response body                           | Description                   |
+| ------ | --------------------------------------- | ----------------------------- |
+| `400`  | `{ "error": "Missing id or resource" }` | Missing required route params |
+| `400`  | `{ "error": "Invalid resource" }`       | Resource parsing failed       |
 
 ## Credits
 

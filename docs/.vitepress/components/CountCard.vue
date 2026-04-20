@@ -2,7 +2,8 @@
 import { onMounted, ref } from 'vue';
 
 const API = 'https://tally.yuki.sh/hits/docs/tally-api';
-const count = ref<number | null>(null);
+const visit = ref<number | null>(null);
+const visitor = ref<number | null>(null);
 const isFailed = ref(false);
 
 onMounted(async () => {
@@ -12,9 +13,10 @@ onMounted(async () => {
     if (!response.ok) {
       throw new Error('Request failed');
     }
-    const data: { count: number } = await response.json();
+    const data: { visit: number; visitor: number } = await response.json();
 
-    count.value = data.count;
+    visit.value = data.visit;
+    visitor.value = data.visitor;
   } catch {
     isFailed.value = true;
   }
@@ -24,8 +26,8 @@ onMounted(async () => {
 <template>
   <div class="count-card">
     <span v-if="isFailed">Failed to fetch count.</span>
-    <span v-else-if="count === null">Loading...</span>
-    <span v-else>Total API Hits: {{ count }}</span>
+    <span v-else-if="visit === null">Loading...</span>
+    <span v-else>Total API Hits: {{ visit }} / Unique IPs: {{ visitor }}</span>
   </div>
 </template>
 

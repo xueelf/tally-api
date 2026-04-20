@@ -45,7 +45,14 @@ https://tally.yuki.sh/hits/blog/976864126ca2
 GET https://tally.yuki.sh/hits/docs/tally-api.json
 ```
 
-其中 `.json` 后缀可以直接省略，不传时默认也会返回 JSON 文本。
+其中 `.json` 后缀可以直接省略，不传时默认也会返回 JSON 文本。响应中同时包含访问总数和独立 IP 数：
+
+```typescript
+type Response = {
+  visit: number;
+  visitor: number;
+};
+```
 
 如果你想自定义页面组件，这会非常好用。例如下面的这一段文本，就是通过接口获取的实时数据：
 

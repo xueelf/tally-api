@@ -17,7 +17,7 @@ https://tally.yuki.sh/hits/:id/:resource[.format]
 ```
 
 - `.svg` returns an image counter
-- `.json` returns JSON; this is also the default when the suffix is omitted
+- `.json` returns JSON with total hit `visit` and unique-IP `visitor` (Default value, can be omitted)
 - `?mode=read` reads the current value without incrementing it
 
 Embed an SVG counter:

@@ -17,7 +17,7 @@ https://tally.yuki.sh/hits/:id/:resource[.format]
 ```
 
 - `.svg` 返回图片计数器
-- `.json` 返回 JSON（默认值，可省略）
+- `.json` 返回 JSON，包含访问总数 `visit` 与独立 IP 数 `visitor`（默认值，可省略）
 - `?mode=read` 只读模式，不递增计数
 
 嵌入 SVG：
