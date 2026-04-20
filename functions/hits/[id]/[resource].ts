@@ -121,50 +121,44 @@ export const onRequest: PagesFunction<CounterEnv> = async context => {
       { status: 400, headers: CORS },
     );
   }
-
   const { resource, format } = parsed;
   const { searchParams } = new URL(request.url);
   const isReadOnly = searchParams.get('mode') === 'read';
+
   const prefix = `hits:${rawId}:${resource}`;
   const visitKey = `${prefix}:visit`;
   const visitorKey = `${prefix}:visitor`;
-  const [storedVisit, storedVisitor] = await Promise.all([
+
+  const clientIp = isReadOnly ? null : request.headers.get('CF-Connecting-IP');
+  const ipKey = clientIp ? `${prefix}:ip:${clientIp}` : null;
+  const [storedVisit, storedVisitor, seen] = await Promise.all([
     env.KV.get(visitKey),
     env.KV.get(visitorKey),
+    ipKey ? env.KV.get(ipKey) : null,
   ]);
-  const currentVisit = Number.parseInt(storedVisit ?? '0', 10) || 0;
-  const currentVisitor = Number.parseInt(storedVisitor ?? '0', 10) || 0;
 
-  let visit = currentVisit;
-  let visitor = currentVisitor;
+  let visit = Number.parseInt(storedVisit ?? '0', 10);
+  let visitor = Number.parseInt(storedVisitor ?? '0', 10);
 
   if (!isReadOnly) {
-    visit = currentVisit + 1;
+    visit += 1;
 
-    const clientIp = request.headers.get('CF-Connecting-IP');
     const writes: Promise<unknown>[] = [env.KV.put(visitKey, visit.toString())];
 
-    if (clientIp) {
-      const ipKey = `${prefix}:ip:${clientIp}`;
-      const seen = await env.KV.get(ipKey);
+    if (ipKey && !seen) {
+      visitor += 1;
 
-      if (!seen) {
-        visitor = currentVisitor + 1;
-        writes.push(
-          env.KV.put(visitorKey, visitor.toString()),
-          env.KV.put(ipKey, Date.now().toString()),
-        );
-      }
+      writes.push(
+        env.KV.put(visitorKey, visitor.toString()),
+        env.KV.put(ipKey, Date.now().toString()),
+      );
     }
-    // Await KV writes so a concurrent read-mode request in the same colo sees
-    // the post-increment value instead of racing with an in-flight put.
     await Promise.all(writes);
   }
 
   if (format === 'json') {
     return Response.json({ visit, visitor }, { headers: NO_CACHE });
   }
-
   const themeParam = searchParams.get('theme') ?? 'moebooru';
   const theme: Theme = isValidTheme(themeParam) ? themeParam : 'moebooru';
   const { ext, mime } = THEMES[theme];
