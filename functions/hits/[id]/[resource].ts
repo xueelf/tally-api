@@ -78,16 +78,16 @@ function isValidTheme(value: string): value is Theme {
 function parseResource(
   rawResource: string,
 ): { resource: string; format: CounterFormat } | null {
-  const match = rawResource.match(/^(.+?)(?:\.(json|svg))?$/);
+  const dot = rawResource.lastIndexOf('.');
 
-  if (!match || !match[1]) {
-    return null;
+  if (dot > 0) {
+    const ext = rawResource.slice(dot + 1);
+
+    if (ext === 'svg' || ext === 'json') {
+      return { resource: rawResource.slice(0, dot), format: ext };
+    }
   }
-
-  return {
-    resource: match[1],
-    format: match[2] === 'svg' ? 'svg' : 'json',
-  };
+  return rawResource ? { resource: rawResource, format: 'json' } : null;
 }
 
 // Read image dimensions directly from binary headers (no extra dependencies needed)
@@ -100,7 +100,6 @@ function readImageDimensions(
   if (ext === 'gif') {
     return { width: view.getUint16(6, true), height: view.getUint16(8, true) };
   }
-
   return { width: view.getUint32(16), height: view.getUint32(20) };
 }
 
@@ -114,7 +113,6 @@ export const onRequest: PagesFunction<CounterEnv> = async context => {
       { status: 400, headers: CORS },
     );
   }
-
   const parsed = parseResource(rawResource);
 
   if (!parsed) {
@@ -127,32 +125,57 @@ export const onRequest: PagesFunction<CounterEnv> = async context => {
   const { resource, format } = parsed;
   const { searchParams } = new URL(request.url);
   const isReadOnly = searchParams.get('mode') === 'read';
-  const kvKey = `hits:${rawId}:${resource}`;
-  const stored = await env.KV.get(kvKey);
-  const currentCount = Number.parseInt(stored ?? '0', 10) || 0;
-  const count = isReadOnly ? currentCount : currentCount + 1;
+  const prefix = `hits:${rawId}:${resource}`;
+  const visitKey = `${prefix}:visit`;
+  const visitorKey = `${prefix}:visitor`;
+  const [storedVisit, storedVisitor] = await Promise.all([
+    env.KV.get(visitKey),
+    env.KV.get(visitorKey),
+  ]);
+  const currentVisit = Number.parseInt(storedVisit ?? '0', 10) || 0;
+  const currentVisitor = Number.parseInt(storedVisitor ?? '0', 10) || 0;
+
+  let visit = currentVisit;
+  let visitor = currentVisitor;
 
   if (!isReadOnly) {
-    // Non-blocking write: deferred via waitUntil so TTFB is not penalised.
-    context.waitUntil(env.KV.put(kvKey, count.toString()));
+    visit = currentVisit + 1;
+
+    const clientIp = request.headers.get('CF-Connecting-IP');
+    const writes: Promise<unknown>[] = [env.KV.put(visitKey, visit.toString())];
+
+    if (clientIp) {
+      const ipKey = `${prefix}:ip:${clientIp}`;
+      const seen = await env.KV.get(ipKey);
+
+      if (!seen) {
+        visitor = currentVisitor + 1;
+        writes.push(
+          env.KV.put(visitorKey, visitor.toString()),
+          env.KV.put(ipKey, Date.now().toString()),
+        );
+      }
+    }
+    // Await KV writes so a concurrent read-mode request in the same colo sees
+    // the post-increment value instead of racing with an in-flight put.
+    await Promise.all(writes);
   }
 
   if (format === 'json') {
-    return Response.json({ count }, { headers: NO_CACHE });
+    return Response.json({ visit, visitor }, { headers: NO_CACHE });
   }
 
   const themeParam = searchParams.get('theme') ?? 'moebooru';
   const theme: Theme = isValidTheme(themeParam) ? themeParam : 'moebooru';
   const { ext, mime } = THEMES[theme];
-  const digits = count.toString().padStart(7, '0').split('');
-  const uniqueDigits = [...new Set(digits)];
+  const digits = visit.toString().padStart(7, '0').split('');
   const digitData = new Map<
     string,
     { width: number; height: number; dataUri: string }
   >();
 
   await Promise.all(
-    uniqueDigits.map(async digit => {
+    [...new Set(digits)].map(async digit => {
       const response = await env.ASSETS.fetch(
         new Request(new URL(`/theme/${theme}/${digit}.${ext}`, request.url)),
       );
@@ -160,7 +183,6 @@ export const onRequest: PagesFunction<CounterEnv> = async context => {
       if (!response.ok) {
         return;
       }
-
       const buffer = await response.arrayBuffer();
       const { width, height } = readImageDimensions(buffer, ext);
       const binary = Array.from(new Uint8Array(buffer), value =>
@@ -175,43 +197,49 @@ export const onRequest: PagesFunction<CounterEnv> = async context => {
     }),
   );
 
-  const defs = uniqueDigits
-    .filter(digit => digitData.has(digit))
-    .map(digit => {
-      const digitImage = digitData.get(digit)!;
-
-      return `\n    <image id="${digit}" width="${digitImage.width}" height="${digitImage.height}" xlink:href="${digitImage.dataUri}" />`;
-    })
-    .join('');
+  const defs: string[] = [];
+  const uses: string[] = [];
+  const emitted = new Set<string>();
 
   let svgWidth = 0;
-  const uses = digits
-    .filter(digit => digitData.has(digit))
-    .map(digit => {
-      const digitImage = digitData.get(digit)!;
-      const x = svgWidth;
+  let svgHeight = 0;
 
-      svgWidth += digitImage.width;
-      return `\n    <use x="${x}" xlink:href="#${digit}" />`;
-    })
-    .join('');
-  const svgHeight = Math.max(
-    0,
-    ...[...digitData.values()].map(digit => digit.height),
-  );
+  for (const digit of digits) {
+    const image = digitData.get(digit);
 
-  const svg = `<?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}" height="${svgHeight}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-  <title>Moe Counter!</title>
-  <style>
-    svg { image-rendering: pixelated; }
-    @media (prefers-color-scheme: dark) { svg { filter: brightness(.6); } }
-  </style>
-  <defs>${defs}
-  </defs>
-  <g>${uses}
-  </g>
-</svg>`;
+    if (!image) {
+      continue;
+    }
+
+    if (!emitted.has(digit)) {
+      emitted.add(digit);
+      defs.push(
+        `    <image id="${digit}" width="${image.width}" height="${image.height}" xlink:href="${image.dataUri}" />`,
+      );
+    }
+    uses.push(`    <use x="${svgWidth}" xlink:href="#${digit}" />`);
+
+    svgWidth += image.width;
+
+    if (image.height > svgHeight) {
+      svgHeight = image.height;
+    }
+  }
+
+  const svg = [
+    `<svg viewBox="0 0 ${svgWidth} ${svgHeight}" width="${svgWidth}" height="${svgHeight}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">`,
+    `  <style>`,
+    `    svg { image-rendering: pixelated; }`,
+    `    @media (prefers-color-scheme: dark) { svg { filter: brightness(.6); } }`,
+    `  </style>`,
+    `  <defs>`,
+    ...defs,
+    `  </defs>`,
+    `  <g>`,
+    ...uses,
+    `  </g>`,
+    `</svg>`,
+  ].join('\n');
 
   return new Response(svg, {
     headers: {
