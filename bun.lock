@@ -5,18 +5,18 @@
     "": {
       "name": "tally-api",
       "devDependencies": {
-        "@commitlint/cli": "latest",
-        "@commitlint/config-conventional": "latest",
-        "@eslint/js": "latest",
-        "eslint": "latest",
-        "husky": "latest",
-        "prettier": "latest",
-        "typescript-eslint": "latest",
-        "vitepress": "latest",
-        "wrangler": "latest",
+        "@commitlint/cli": "^20.5.0",
+        "@commitlint/config-conventional": "^20.5.3",
+        "@eslint/js": "^10.0.1",
+        "eslint": "^10.2.0",
+        "husky": "^9.1.7",
+        "prettier": "^3.8.3",
+        "typescript-eslint": "^8.58.2",
+        "vitepress": "^1.6.4",
+        "wrangler": "^4.83.0",
       },
       "peerDependencies": {
-        "typescript": "latest",
+        "typescript": "^6.0.3",
       },
     },
   },
@@ -83,7 +83,7 @@
 
     "@commitlint/cli": ["@commitlint/cli@20.5.0", "", { "dependencies": { "@commitlint/format": "^20.5.0", "@commitlint/lint": "^20.5.0", "@commitlint/load": "^20.5.0", "@commitlint/read": "^20.5.0", "@commitlint/types": "^20.5.0", "tinyexec": "^1.0.0", "yargs": "^17.0.0" }, "bin": { "commitlint": "./cli.js" } }, "sha512-yNkyN/tuKTJS3wdVfsZ2tXDM4G4Gi7z+jW54Cki8N8tZqwKBltbIvUUrSbT4hz1bhW/h0CdR+5sCSpXD+wMKaQ=="],
 
-    "@commitlint/config-conventional": ["@commitlint/config-conventional@20.5.0", "", { "dependencies": { "@commitlint/types": "^20.5.0", "conventional-changelog-conventionalcommits": "^9.2.0" } }, "sha512-t3Ni88rFw1XMa4nZHgOKJ8fIAT9M2j5TnKyTqJzsxea7FUetlNdYFus9dz+MhIRZmc16P0PPyEfh6X2d/qw8SA=="],
+    "@commitlint/config-conventional": ["@commitlint/config-conventional@20.5.3", "", { "dependencies": { "@commitlint/types": "^20.5.0", "conventional-changelog-conventionalcommits": "^9.2.0" } }, "sha512-j34Qqeaa152chJgz2ysyk0BCpHenJn1lV0Rx0VXf8k3ccQcED+48EZrzMvo9jLmJUyBrrBwvu89I+2er4gW7QQ=="],
 
     "@commitlint/config-validator": ["@commitlint/config-validator@20.5.0", "", { "dependencies": { "@commitlint/types": "^20.5.0", "ajv": "^8.11.0" } }, "sha512-T/Uh6iJUzyx7j35GmHWdIiGRQB+ouZDk0pwAaYq4SXgB54KZhFdJ0vYmxiW6AMYICTIWuyMxDBl1jK74oFp/Gw=="],
 
