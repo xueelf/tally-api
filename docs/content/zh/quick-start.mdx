@@ -1,0 +1,85 @@
+---
+title: 快速上手
+description: 嵌入 SVG 图片计数器，或使用 JSON API 记录访问与展示计数。
+---
+
+import CountCard from '../components/CountCard';
+
+# 快速上手
+
+Counterflare 适用于 GitHub README、博客与个人站点。在自己的 Cloudflare 账号下[部署实例](./deploy.md)，然后将示例中的地址替换为实际实例地址。`https://counter.example.com` 仅为示例域名。
+
+## 选择计数器
+
+命名空间与名称共同确定一个计数器：
+
+```text
+/api/counters/:namespace/:name
+/counters/:namespace/:name.svg
+```
+
+例如，命名空间使用 `github@yourname`，名称使用 `readme`。为需要分别统计的页面选择不同名称。命名空间与名称相同时，SVG 路径和 JSON 路径共用同一份数据。
+
+命名空间用于组织计数器，接口公开。与其他用户共用实例时，请选择不易重复的名称。
+
+## 嵌入 SVG
+
+在 Markdown 中插入图片：
+
+```md
+![counter](https://counter.example.com/counters/github@yourname/readme.svg)
+```
+
+首次图片请求创建计数器。每次实际到达 Counterflare 的图片请求都会记录一次访问，并返回更新后的访问总数。下面展示的是当前文档实例自身的计数器：
+
+![Counterflare 文档访问次数](/counters/docs/quick-start.svg)
+
+通过 `theme` 选择主题：
+
+```md
+![counter](https://counter.example.com/counters/github@yourname/readme.svg?theme=miku)
+```
+
+内置主题包括 `moebooru`（默认）、`gelbooru`、`miku` 与 `minecraft`。原始主题图片可在 [Moe-Counter 画廊](https://count.getloli.com/)查看，实际可用主题以当前版本附带的图片为准。
+
+只想展示已有计数器、不记录新访问时，添加 `mode=read`：
+
+```md
+![counter](https://counter.example.com/counters/github@yourname/readme.svg?theme=miku&mode=read)
+```
+
+若计数器从未记录过访问，只读请求返回 `404`。
+
+## 使用 JSON
+
+发送不带请求体的 `POST`，记录一次访问：
+
+```ts
+const response = await fetch(
+  'https://counter.example.com/api/counters/github@yourname/readme',
+  { method: 'POST' },
+);
+const count = await response.json();
+// { visit: 42, visitor: 12 }
+```
+
+使用普通 `GET` 读取，不增加计数：
+
+```ts
+const response = await fetch(
+  'https://counter.example.com/api/counters/github@yourname/readme',
+);
+```
+
+`POST` 创建新计数器时返回 `201 Created`，更新已有计数器时返回 `200 OK`。`GET` 不会创建计数器。
+
+以下组件在挂载时记录一次访问，并展示当前实例返回的 JSON 结果：
+
+<CountCard chinese />
+
+## 理解统计结果
+
+- `visit` 统计已记录的请求，包括同一 IP 的重复请求。
+- `visitor` 统计计数器自建立以来的独立客户端 IP 数，不等于人数或每日独立访客数。
+
+同一次页面加载若同时通过 SVG 与 JSON 记录访问，会被计数两次。图片代理和缓存也可能使页面浏览不再请求计数服务。标识规则、计数行为、隐私与状态码详见 [API 参考](./api.md)。

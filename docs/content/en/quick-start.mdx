@@ -1,0 +1,85 @@
+---
+title: Getting started
+description: Embed an SVG counter or use the JSON API to record visits and display counts.
+---
+
+import CountCard from '../components/CountCard';
+
+# Getting started
+
+Counterflare is a web counter for GitHub READMEs, blogs, and personal sites. [Deploy an instance](./deploy.md) on your Cloudflare account, then use its URL in the examples below. `https://counter.example.com` is an example domain.
+
+## Choose a counter
+
+A namespace and name identify one counter:
+
+```text
+/api/counters/:namespace/:name
+/counters/:namespace/:name.svg
+```
+
+For example, use `github@yourname` as the namespace and `readme` as the name. Use a different name for each page you want to count separately. SVG and JSON paths with the same namespace and name share the same data.
+
+Namespaces organize counters and are public. Choose a distinctive name if you share an instance with other users.
+
+## Embed an SVG
+
+Insert an image in Markdown:
+
+```md
+![counter](https://counter.example.com/counters/github@yourname/readme.svg)
+```
+
+The first image request creates the counter. Every image request that reaches Counterflare records one visit and returns the updated total. This documentation instance renders its own counter below:
+
+![Counterflare documentation visits](/counters/docs/quick-start.svg)
+
+Select a theme with `theme`:
+
+```md
+![counter](https://counter.example.com/counters/github@yourname/readme.svg?theme=miku)
+```
+
+Bundled themes include `moebooru` (the default), `gelbooru`, `miku`, and `minecraft`. See the [Moe-Counter gallery](https://count.getloli.com/) for the original theme artwork; available themes depend on the images included in this release.
+
+Add `mode=read` when you want to display an existing counter without recording another visit:
+
+```md
+![counter](https://counter.example.com/counters/github@yourname/readme.svg?theme=miku&mode=read)
+```
+
+A read of a counter that has never recorded a visit returns `404`.
+
+## Use JSON
+
+Record a visit with a bodyless `POST`:
+
+```ts
+const response = await fetch(
+  'https://counter.example.com/api/counters/github@yourname/readme',
+  { method: 'POST' },
+);
+const count = await response.json();
+// { visit: 42, visitor: 12 }
+```
+
+Use a plain `GET` to read it without incrementing:
+
+```ts
+const response = await fetch(
+  'https://counter.example.com/api/counters/github@yourname/readme',
+);
+```
+
+A `POST` that creates a counter returns `201 Created`; updating an existing counter returns `200 OK`. `GET` never creates counters.
+
+The following component records one visit when mounted and displays the JSON result from this instance:
+
+<CountCard />
+
+## Understand the counts
+
+- `visit` counts recorded requests, including repeat requests from the same IP.
+- `visitor` counts distinct client IPs over this counter's lifetime, not people or daily visitors.
+
+Do not record the same page load with both the SVG and JSON endpoints unless you intend to count it twice. Image proxies and caches can prevent page views from reaching the service. See the [API reference](./api.md) for identifier rules, counting behavior, privacy, and status codes.

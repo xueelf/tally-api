@@ -1,59 +1,77 @@
-# Tally API
+# Counterflare
 
-![counter](https://tally.yuki.sh/hits/github/tally-api.svg?theme=gelbooru)
-
-A lightweight hit counter built on Cloudflare Pages Functions and KV. Use it in GitHub READMEs, blogs, and personal sites.
+A lightweight web counter running on [Cloudflare Workers](https://developers.cloudflare.com/workers/) and [D1 SQLite Database](https://developers.cloudflare.com/d1/). Embed an SVG counter in a README or webpage, or use the JSON API to record visits and display counts yourself.
 
 Read this in other languages: English | [中文](./README.zh.md)
 
-Tally API is ready to use out of the box. It serves both SVG counters and JSON responses, and you can also deploy it to your own Cloudflare Pages project.
+Each counter tracks total visits and distinct client IPs. Updates and IP deduplication commit in one database transaction. D1 stores SHA-256 IP fingerprints, not raw IP addresses. Counterflare supports Cloudflare only.
 
 ## Usage
 
-Endpoint format:
+[Deploy your own instance](./docs/content/en/deploy.md), then replace `https://counter.example.com` in these examples with its URL.
 
-```text
-https://tally.yuki.sh/hits/:id/:resource[.format]
-```
-
-- `.svg` returns an image counter
-- `.json` returns JSON with total hit `visit` and unique-IP `visitor` (Default value, can be omitted)
-- `?mode=read` reads the current value without incrementing it
-
-Embed an SVG counter:
+Embed a counter in Markdown:
 
 ```md
-![counter](https://tally.yuki.sh/hits/github/tally-api.svg)
+![counter](https://counter.example.com/counters/github@yourname/readme.svg)
 ```
 
-![counter](https://tally.yuki.sh/hits/github/tally-api.svg?mode=read)
+Each SVG request records one visit. Add `?theme=miku` to select a theme or `?mode=read` to display an existing counter without recording a visit. The default theme is `moebooru`.
 
-Apply a theme:
-
-```md
-![counter](https://tally.yuki.sh/hits/github/tally-api.svg?theme=miku)
-```
-
-Tally API supports every Moe Counter theme, including `moebooru`, `gelbooru`, `miku`, and `minecraft`. The default theme is `moebooru`. See https://count.getloli.com for the full gallery.
-
-![counter](https://tally.yuki.sh/hits/github/tally-api.svg?mode=read&theme=miku)
-
-Fetch JSON:
+Record a visit and receive JSON:
 
 ```http
-GET https://tally.yuki.sh/hits/github/tally-api.json
+POST /api/counters/github@yourname/readme
 ```
 
-## Documentation
+The first visit creates the counter and returns `201 Created`; subsequent visits return `200 OK`:
 
-For guides, API behavior, theme usage, and self-hosting instructions, see:
+```json
+{ "visit": 1, "visitor": 1 }
+```
 
-[https://tally.yuki.sh/](https://tally.yuki.sh/)
+Read the same counter with `GET /api/counters/github@yourname/readme`. Reads never increment or create counters; an unknown counter returns `404 Not Found`.
 
-## Credits
+`visitor` is the number of distinct IPs seen over a counter's lifetime, not people or daily unique visitors. Image proxies, caches, bots, and client retries affect what requests reach the service. The service is public: namespaces organize counters and do not grant ownership or access control.
 
-The SVG themes and rendering approach are inspired by [journey-ad/Moe-Counter](https://github.com/journey-ad/Moe-Counter). Tally API keeps the familiar image-counter workflow and adds a JSON endpoint for scripts and custom UI.
+See the [getting started guide](./docs/content/en/quick-start.mdx), [API reference](./docs/content/en/api.md), and [deployment guide](./docs/content/en/deploy.md).
 
-## License
+## Local development
 
-Released under the [MIT License](./LICENSE).
+Install dependencies with [Bun](https://bun.sh) 1.4 or later.
+
+```sh
+bun install
+```
+
+Run `bun run dev` and open `http://127.0.0.1:8787`. It serves the Worker and documentation through local workerd and applies local D1 migrations.
+
+| Command                     | Purpose                                                        |
+| --------------------------- | -------------------------------------------------------------- |
+| `bun run dev`               | Run the Worker and documentation locally                       |
+| `bun run build`             | Generate theme assets and build the documentation              |
+| `bun run docs:dev`          | Run the documentation site in watch mode                       |
+| `bun run deploy`            | Build, apply remote database migrations, and deploy            |
+| `bun run db:migrate:local`  | Apply local database migrations                                |
+| `bun run db:migrate:remote` | Apply remote database migrations                               |
+| `bun test`                  | Run tests                                                      |
+| `bun run check`             | Check formatting, lint, types, tests, build, and Worker bundle |
+
+Wrangler generates the binding types in `types/` from `wrangler.jsonc`. Runtime declarations come from `@cloudflare/workers-types`.
+
+## Project layout
+
+```text
+src/worker/      HTTP handling, D1 counters, and SVG rendering
+migrations/      D1 schema migrations
+scripts/         Theme asset generation and local Worker startup
+tests/           HTTP, persistence, and rendering tests
+docs/            Phyllo documentation, React examples, and theme images
+types/           Generated Worker binding types
+```
+
+## Credits and license
+
+The SVG rendering and theme handling reference [journey-ad/Moe-Counter](https://github.com/journey-ad/Moe-Counter). Theme images belong to their respective creators; including them does not relicense them under this project's license.
+
+Counterflare's code is released under the [MIT License](./LICENSE).
