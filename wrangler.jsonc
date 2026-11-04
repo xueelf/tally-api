@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "counterflare",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-10-20",
+  "assets": {
+    "directory": "./docs/dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/counters/*"],
+    "not_found_handling": "404-page",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "counterflare",
+      /*
+       * Left out on purpose.
+       * The deploy flow creates the database and writes the id back here.
+       * For a manual deploy, uncomment the line below.
+       * Replace the placeholder with the id from `wrangler d1 create counterflare`.
+       */
+      // "database_id": "<DATABASE_ID>",
+    },
+  ],
+}
