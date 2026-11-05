@@ -2,8 +2,9 @@ version: 2
 updates:
   - package-ecosystem: 'bun'
     directory: '/'
+    target-branch: 'develop'
     schedule:
-      interval: 'daily'
+      interval: 'weekly'
     commit-message:
       prefix: 'chore'
       include: 'scope'
@@ -12,8 +13,9 @@ updates:
 
   - package-ecosystem: 'github-actions'
     directory: '/'
+    target-branch: 'develop'
     schedule:
-      interval: 'daily'
+      interval: 'weekly'
     commit-message:
       prefix: 'ci'
       include: 'scope'

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.wrangler/
+types/
+src/generated/
+docs/public/theme-data/
+docs/.phyllo/
+docs/dist/

@@ -1,10 +1,20 @@
+# OS / editor
 .DS_Store
 .idea/
-.wrangler/
-dist/
+
+# Dependencies
 node_modules/
 
-docs/**/cache/
-docs/**/dist/
+# Build output
+dist/
+.wrangler/
 
+# Caches
+.eslintcache
+.prettiercache
+
+# Generated files
+src/generated/
+docs/public/theme-data/
+docs/.phyllo/
 worker-configuration.d.ts

@@ -1,41 +1,68 @@
 {
-  "name": "tally-api",
-  "type": "module",
+  "name": "counterflare",
+  "private": true,
+  "description": "A lightweight web counter on Cloudflare Workers and D1, with SVG counters and JSON responses.",
   "license": "MIT",
   "author": "Yuki <admin@yuki.sh>",
+  "type": "module",
   "scripts": {
-    "dev": "bun run docs:build && bun run types && wrangler pages dev ./dist",
-    "types": "wrangler types ./types/worker-configuration.d.ts",
-    "format": "prettier **/*.ts --write",
-    "lint": "eslint **/*.ts",
-    "prepare": "husky",
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "build": "bun run themes:build && phyllo build docs",
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun test && bun run build && wrangler deploy --dry-run",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "deploy": "bun run build && bun run db:migrate:remote && wrangler deploy",
+    "dev": "bun run types && bun run build && bun scripts/local-worker.ts",
+    "docs:dev": "phyllo dev docs",
+    "format": "prettier \"**/*.{json,jsonc,md,mdx,ts,tsx,yaml,yml}\" --write",
+    "format:check": "prettier \"**/*.{json,jsonc,md,mdx,ts,tsx,yaml,yml}\" --check",
+    "lint": "eslint --cache",
+    "lint:fix": "eslint --fix --cache",
+    "prepare": "bun run themes:build && husky",
+    "themes:build": "bun scripts/generate-themes.ts",
+    "typecheck": "bun run themes:build && bun run types && tsc --noEmit",
+    "types": "mkdir -p types && wrangler types ./types/worker-configuration.d.ts --include-runtime=false"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.5.0",
-    "@commitlint/config-conventional": "^20.5.0",
+    "@cloudflare/workers-types": "5.20261028.1",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@commitlint/types": "^21.2.0",
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.2.0",
+    "@phyllo/cli": "^0.1.0",
+    "@phyllo/core": "^0.1.0",
+    "@types/bun": "^1.4.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^10.11.0",
     "husky": "^9.1.7",
-    "prettier": "^3.8.3",
-    "typescript-eslint": "^8.58.2",
-    "vitepress": "^1.6.4",
-    "wrangler": "^4.83.0"
-  },
-  "peerDependencies": {
-    "typescript": "^6.0.3"
+    "miniflare": "5.20261023.1-beta",
+    "phyllo": "^0.1.0",
+    "phyllo-theme-docs": "^0.1.0",
+    "prettier": "^3.9.8",
+    "prettier-plugin-sort": "^1.1.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "wrangler": "4.154.0"
   },
   "devEngines": {
     "runtime": {
       "name": "bun",
-      "onFail": "error"
+      "version": ">=1.4.0",
+      "onFail": "warn"
     },
     "packageManager": {
       "name": "bun",
-      "onFail": "error"
+      "version": ">=1.4.0",
+      "onFail": "warn"
     }
   },
-  "private": true
+  "cloudflare": {
+    "bindings": {
+      "DB": {
+        "description": "Stores counters and unique-IP fingerprints."
+      }
+    }
+  }
 }
